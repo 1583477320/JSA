@@ -280,83 +280,23 @@ const JSA = (() => {
     </svg>`;
   }
 
-  // ================================================================
-  //  Fallback jobs (only when API is unreachable)
-  // ================================================================
-  const FALLBACK_JOBS = [
-    { id: 'fb-001', title: 'AI 工程师', company: '字节跳动',
-      location: '北京/上海', salary: '¥50k–¥80k/月', remote: false,
-      url: 'https://example.com/fb1', post_date: '2026-07-24',
-      description: '负责 AI 大模型在推荐场景的落地和优化，包括模型训练、推理优化和线上部署。要求熟练使用 Python、PyTorch、CUDA 优化。',
-      snippet: '负责 AI 大模型在推荐场景的落地和优化',
-      match_score: 82, missing_skills: ['CUDA'] },
-    { id: 'fb-002', title: 'AI Engineer — LLM', company: 'Alibaba Cloud',
-      location: '杭州', salary: '¥60k–¥90k/月', remote: false,
-      url: 'https://example.com/fb2', post_date: '2026-07-22',
-      description: 'Build and deploy large language model serving infrastructure. Experience with Kubernetes, Ray, and model quantization.',
-      snippet: 'Build and deploy large language model serving infrastructure.',
-      match_score: 78, missing_skills: ['Ray'] },
-    { id: 'fb-003', title: '机器学习工程师', company: '腾讯',
-      location: '深圳', salary: '¥45k–¥75k/月', remote: false,
-      url: 'https://example.com/fb3', post_date: '2026-07-20',
-      description: '参与腾讯广告推荐系统优化，负责 CTR/CVR 预估模型研发。熟悉深度学习、特征工程、大规模分布式训练。',
-      snippet: '参与腾讯广告推荐系统优化，负责 CTR/CVR 预估模型研发',
-      match_score: 75, missing_skills: ['分布式训练'] },
-    { id: 'fb-004', title: 'AI Platform Engineer', company: '百度',
-      location: '北京', salary: '¥50k–¥85k/月', remote: false,
-      url: 'https://example.com/fb4', post_date: '2026-07-19',
-      description: '构建和维护百度 AI 训练平台，支持 PaddlePaddle 和 PyTorch 的大规模训练任务。',
-      snippet: '构建和维护百度 AI 训练平台',
-      match_score: 70, missing_skills: ['PaddlePaddle'] },
-    { id: 'fb-005', title: 'Senior Python Engineer', company: 'Acme Corp',
-      location: 'San Francisco, CA', salary: '$150k – $200k', remote: true,
-      url: 'https://example.com/fb5', post_date: '2026-07-20',
-      description: 'Build and scale Python microservices powering Acme\'s AI platform with FastAPI, SQLAlchemy, and AWS.',
-      snippet: 'Build and scale Python microservices powering Acme\'s AI platform.',
-      match_score: 88, missing_skills: ['Kubernetes'] },
-    { id: 'fb-006', title: 'DevOps / Infrastructure Engineer', company: 'CloudNative Ltd',
-      location: 'Remote', salary: '$140k – $190k', remote: true,
-      url: 'https://example.com/fb6', post_date: '2026-07-23',
-      description: 'Own cloud infrastructure at CloudNative. Terraform, AWS/GCP, GitHub Actions, Docker, and Kubernetes.',
-      snippet: 'Own the cloud infrastructure at CloudNative. Terraform, AWS/GCP.',
-      match_score: 82, missing_skills: ['Terraform'] },
-  ];
-
   async function searchJobs(query, location, remoteOnly) {
-    // Try the real API first
-    try {
-      const resp = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          query: query || '',
-          location: location || '',
-          remoteOnly: !!remoteOnly,
-          maxResults: state.settings.maxResults || 10,
-        }),
-      });
-      if (!resp.ok) throw new Error(`API ${resp.status}`);
-      const data = await resp.json();
-      if (data.jobs && data.jobs.length > 0) return data.jobs;
-    } catch (err) {
-      console.warn('Search API unavailable, using fallback data:', err.message);
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: query || '',
+        location: location || '',
+        remoteOnly: !!remoteOnly,
+        maxResults: state.settings.maxResults || 10,
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `API error ${resp.status}`);
     }
-
-    // Fallback: filter local jobs
-    let results = [...FALLBACK_JOBS];
-    if (query) {
-      const q = query.toLowerCase();
-      results = results.filter(j =>
-        j.title.toLowerCase().includes(q) ||
-        j.company.toLowerCase().includes(q) ||
-        (j.description || '').toLowerCase().includes(q));
-    }
-    if (location) {
-      const l = location.toLowerCase();
-      results = results.filter(j => j.location.toLowerCase().includes(l));
-    }
-    if (remoteOnly) results = results.filter(j => j.remote);
-    return results;
+    const data = await resp.json();
+    return data.jobs || [];
   }
 
   // ================================================================
@@ -386,23 +326,6 @@ const JSA = (() => {
     'job-006': {
       factsEn: ['React', 'Python', 'Django', 'full-stack'],
       factsZh: ['React', 'Python', 'Django', '全栈'],
-    },
-    // Fallback Chinese jobs
-    'fb-001': {
-      factsEn: ['Python', 'PyTorch', 'CUDA', 'AI', 'recommendation systems'],
-      factsZh: ['Python', 'PyTorch', 'CUDA', 'AI', '推荐系统'],
-    },
-    'fb-002': {
-      factsEn: ['Kubernetes', 'Ray', 'LLM', 'model serving'],
-      factsZh: ['Kubernetes', 'Ray', '大模型', '模型部署'],
-    },
-    'fb-003': {
-      factsEn: ['deep learning', 'CTR/CVR', 'feature engineering'],
-      factsZh: ['深度学习', 'CTR/CVR', '特征工程', '推荐系统'],
-    },
-    'fb-004': {
-      factsEn: ['PaddlePaddle', 'PyTorch', 'training platform', 'AI infrastructure'],
-      factsZh: ['PaddlePaddle', 'PyTorch', '训练平台', 'AI 基础设施'],
     },
   };
 
