@@ -10,3 +10,5 @@ build/
 .venv/
 venv/
 env/
+.env
+data/jobs.db
