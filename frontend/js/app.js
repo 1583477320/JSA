@@ -281,6 +281,7 @@ const JSA = (() => {
   }
 
   async function searchJobs(query, location, remoteOnly) {
+    const s = state.settings;
     const resp = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -288,7 +289,8 @@ const JSA = (() => {
         query: query || '',
         location: location || '',
         remoteOnly: !!remoteOnly,
-        maxResults: state.settings.maxResults || 10,
+        maxResults: s.maxResults || 10,
+        tavilyApiKey: s.tavilyApiKey || '',
       }),
     });
     if (!resp.ok) {

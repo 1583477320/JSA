@@ -1,7 +1,9 @@
 """Vercel Python Serverless Function — Tavily search proxy.
 
-Frontend calls POST /api/search with JSON body, this function calls
-Tavily with the server-side API key and returns results.
+Frontend calls POST /api/search with JSON body. Accepts an optional
+``tavilyApiKey`` in the body so users can configure their own key
+via the frontend Settings panel. Falls back to the server-side
+TAVILY_API_KEY environment variable.
 """
 
 import json
@@ -19,7 +21,6 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         try:
-            # Read body
             length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(length) if length else b"{}"
             body = json.loads(raw)
@@ -32,14 +33,14 @@ class handler(BaseHTTPRequestHandler):
         remote_only = bool(body.get("remoteOnly"))
         max_results = int(body.get("maxResults", 10))
 
+        # API key: prefer user-provided from frontend settings, fallback to env
+        tavily_key = (body.get("tavilyApiKey") or "").strip() or os.environ.get("TAVILY_API_KEY")
+
         if not query:
             self._respond({"error": "query is required"}, 400)
             return
-
-        # --- Build Tavily query ---
-        api_key = os.environ.get("TAVILY_API_KEY")
-        if not api_key:
-            self._respond({"error": "TAVILY_API_KEY not configured"}, 500)
+        if not tavily_key:
+            self._respond({"error": "TAVILY_API_KEY not configured — set it in Settings or Vercel env"}, 500)
             return
 
         search_q = query
@@ -50,7 +51,7 @@ class handler(BaseHTTPRequestHandler):
 
         try:
             from tavily import TavilyClient
-            client = TavilyClient(api_key=api_key)
+            client = TavilyClient(api_key=tavily_key)
             response = client.search(
                 query=search_q,
                 max_results=max_results,
@@ -61,7 +62,6 @@ class handler(BaseHTTPRequestHandler):
             self._respond({"error": f"Tavily search failed: {exc}"}, 502)
             return
 
-        # --- Map results ---
         jobs = []
         for hit in response.get("results", []):
             title = hit.get("title", "")
@@ -99,7 +99,6 @@ class handler(BaseHTTPRequestHandler):
 
 
 def _extract_company(title: str, url: str) -> str:
-    """Best-effort company name from search result title or URL."""
     for sep in [" at ", " @ ", " - ", " | ", " — "]:
         if sep in title:
             parts = title.split(sep)
@@ -111,7 +110,7 @@ def _extract_company(title: str, url: str) -> str:
         domain = urlparse(url).netloc.lower()
         for prefix in ["www.", "careers.", "jobs.", "hiring."]:
             if domain.startswith(prefix):
-                domain = domain[len(prefix) :]
+                domain = domain[len(prefix):]
         company = domain.split(".")[0]
         if company:
             return company.capitalize()
