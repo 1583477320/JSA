@@ -105,6 +105,10 @@ a:hover { text-decoration: underline; }
   transition: background var(--dur-fast), color var(--dur-fast);
 }
 .btn-icon:hover { background: var(--color-border); color: var(--color-text); }
+.lang-toggle {
+  font-family: var(--font-mono); font-size: .75rem; font-weight: 700;
+  width: auto; padding: 0 8px; letter-spacing: .02em;
+}
 
 /* ----- Hero / Search ---------------------------------------- */
 .hero {

@@ -26,9 +26,10 @@
           <circle cx="21" cy="16" r="2" fill="#3B82F6"/>
           <path d="M8 6V4M20 6V4" stroke="#1E40AF" stroke-width="2" stroke-linecap="round"/>
         </svg>
-        JSA <span>| Job Search Agent</span>
+        JSA <span>| <span data-i18n="brand.suffix">Job Search Agent</span></span>
       </a>
       <div class="navbar-actions">
+        <button id="langToggle" class="btn-icon lang-toggle" aria-label="Switch language" title="Switch language">EN</button>
         <span class="navbar-badge">v0.1</span>
         <button id="settingsBtn" class="btn-icon" aria-label="Settings" title="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -43,43 +44,43 @@
   <div id="settingsOverlay" class="settings-overlay" aria-hidden="true">
     <aside class="settings-panel" role="dialog" aria-label="Settings">
       <div class="settings-header">
-        <h2>⚙️ Settings</h2>
+        <h2>⚙️ <span data-i18n="settings.title">Settings</span></h2>
         <button id="settingsClose" class="modal-close" aria-label="Close settings">&times;</button>
       </div>
       <div class="settings-body">
-        <h3>LLM Configuration</h3>
-        <p class="setting-desc">Configure the AI model used for matching and chat. Supports any OpenAI-compatible API.</p>
+        <h3 data-i18n="settings.llm">LLM Configuration</h3>
+        <p class="setting-desc" data-i18n="settings.llm.desc">Configure the AI model used for matching and chat. Supports any OpenAI-compatible API.</p>
 
         <label class="setting-group">
-          <span>OpenAI API Key</span>
+          <span data-i18n="settings.key">OpenAI API Key</span>
           <input id="sOpenAiKey" type="password" placeholder="sk-..." autocomplete="off">
         </label>
         <label class="setting-group">
-          <span>OpenAI Base URL</span>
+          <span data-i18n="settings.base_url">OpenAI Base URL</span>
           <input id="sBaseUrl" type="url" placeholder="https://api.openai.com/v1">
         </label>
         <label class="setting-group">
-          <span>Model</span>
+          <span data-i18n="settings.model">Model</span>
           <input id="sModel" type="text" placeholder="gpt-4o-mini">
         </label>
 
-        <h3>Search</h3>
+        <h3 data-i18n="settings.search">Search</h3>
         <label class="setting-group">
-          <span>Tavily API Key</span>
+          <span data-i18n="settings.tavily">Tavily API Key</span>
           <input id="sTavilyKey" type="password" placeholder="tvly-..." autocomplete="off">
         </label>
         <label class="setting-group">
-          <span>Anthropic API Key</span>
+          <span data-i18n="settings.anthropic">Anthropic API Key</span>
           <input id="sAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
         </label>
         <label class="setting-group">
-          <span>Max Results</span>
+          <span data-i18n="settings.max_results">Max Results</span>
           <input id="sMaxResults" type="number" min="5" max="50" placeholder="10">
         </label>
 
         <div class="settings-actions">
-          <button id="settingsSave" class="btn btn-primary">💾 Save Settings</button>
-          <button id="settingsReset" class="btn btn-secondary">↺ Reset</button>
+          <button id="settingsSave" class="btn btn-primary">💾 <span data-i18n="settings.save">Save Settings</span></button>
+          <button id="settingsReset" class="btn btn-secondary">↺ <span data-i18n="settings.reset">Reset</span></button>
         </div>
         <p id="settingsStatus" class="settings-status"></p>
       </div>
@@ -89,8 +90,8 @@
   <!-- ========== Hero / Search ================================ -->
   <section class="hero">
     <div class="hero-inner">
-      <h1>Find your next role,<br>matched to your skills</h1>
-      <p>AI-powered job matching that scores each position against your resume — so you only apply where you&rsquo;re a strong fit.</p>
+      <h1 data-i18n="hero.title">Find your next role,<br>matched to your skills</h1>
+      <p data-i18n="hero.subtitle">AI-powered job matching that scores each position against your resume — so you only apply where you&rsquo;re a strong fit.</p>
 
       <form id="searchForm" class="search-form" role="search">
         <div class="input-group">
@@ -98,6 +99,7 @@
           <input
             id="searchInput"
             type="text"
+            data-i18n-placeholder="search.placeholder"
             placeholder="Job title, skills, or keywords..."
             autocomplete="off"
             aria-label="Search keywords"
@@ -108,17 +110,18 @@
           <input
             id="locationInput"
             type="text"
+            data-i18n-placeholder="location.placeholder"
             placeholder="City or remote"
             autocomplete="off"
             aria-label="Location"
           >
         </div>
         <label class="toggle-group">
-          <span>🌍 Remote only</span>
+          <span data-i18n="search.remote">🌍 Remote only</span>
           <input id="remoteToggle" type="checkbox" aria-label="Remote only">
         </label>
         <button class="btn-primary" type="submit">
-          Search
+          <span data-i18n="search.btn">Search</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
           </svg>
@@ -131,7 +134,7 @@
   <main class="results" role="main">
     <div id="resultsHeader" class="results-header">
       <h2>
-        📋 Results
+        📋 <span data-i18n="results.title">Results</span>
         <span id="resultsCount" class="results-count"></span>
       </h2>
     </div>
@@ -142,7 +145,7 @@
 
   <!-- ========== Footer ====================================== -->
   <footer class="footer">
-    <p>Job Search Agent &middot; Powered by Claude + LangGraph</p>
+    <p data-i18n="footer">Job Search Agent &middot; Powered by Claude + LangGraph</p>
   </footer>
 
   <script src="js/app.js"></script>
