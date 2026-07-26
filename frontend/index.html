@@ -28,9 +28,63 @@
         </svg>
         JSA <span>| Job Search Agent</span>
       </a>
-      <span class="navbar-badge">v0.1</span>
+      <div class="navbar-actions">
+        <span class="navbar-badge">v0.1</span>
+        <button id="settingsBtn" class="btn-icon" aria-label="Settings" title="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
+
+  <!-- ========== Settings Panel =============================== -->
+  <div id="settingsOverlay" class="settings-overlay" aria-hidden="true">
+    <aside class="settings-panel" role="dialog" aria-label="Settings">
+      <div class="settings-header">
+        <h2>⚙️ Settings</h2>
+        <button id="settingsClose" class="modal-close" aria-label="Close settings">&times;</button>
+      </div>
+      <div class="settings-body">
+        <h3>LLM Configuration</h3>
+        <p class="setting-desc">Configure the AI model used for matching and chat. Supports any OpenAI-compatible API.</p>
+
+        <label class="setting-group">
+          <span>OpenAI API Key</span>
+          <input id="sOpenAiKey" type="password" placeholder="sk-..." autocomplete="off">
+        </label>
+        <label class="setting-group">
+          <span>OpenAI Base URL</span>
+          <input id="sBaseUrl" type="url" placeholder="https://api.openai.com/v1">
+        </label>
+        <label class="setting-group">
+          <span>Model</span>
+          <input id="sModel" type="text" placeholder="gpt-4o-mini">
+        </label>
+
+        <h3>Search</h3>
+        <label class="setting-group">
+          <span>Tavily API Key</span>
+          <input id="sTavilyKey" type="password" placeholder="tvly-..." autocomplete="off">
+        </label>
+        <label class="setting-group">
+          <span>Anthropic API Key</span>
+          <input id="sAnthropicKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+        </label>
+        <label class="setting-group">
+          <span>Max Results</span>
+          <input id="sMaxResults" type="number" min="5" max="50" placeholder="10">
+        </label>
+
+        <div class="settings-actions">
+          <button id="settingsSave" class="btn btn-primary">💾 Save Settings</button>
+          <button id="settingsReset" class="btn btn-secondary">↺ Reset</button>
+        </div>
+        <p id="settingsStatus" class="settings-status"></p>
+      </div>
+    </aside>
+  </div>
 
   <!-- ========== Hero / Search ================================ -->
   <section class="hero">
