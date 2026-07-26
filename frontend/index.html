@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSA — Job Search Agent</title>
+
+  <!-- Preload critical font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ========== Navbar ====================================== -->
+  <nav class="navbar" role="navigation">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">
+        <svg viewBox="0 0 28 28" fill="none">
+          <rect x="2" y="6" width="24" height="18" rx="4" stroke="#1E40AF" stroke-width="2.5" fill="#DBEAFE"/>
+          <path d="M2 12h24" stroke="#1E40AF" stroke-width="2"/>
+          <circle cx="9" cy="16" r="2" fill="#3B82F6"/>
+          <circle cx="15" cy="16" r="2" fill="#3B82F6"/>
+          <circle cx="21" cy="16" r="2" fill="#3B82F6"/>
+          <path d="M8 6V4M20 6V4" stroke="#1E40AF" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        JSA <span>| Job Search Agent</span>
+      </a>
+      <span class="navbar-badge">v0.1</span>
+    </div>
+  </nav>
+
+  <!-- ========== Hero / Search ================================ -->
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>Find your next role,<br>matched to your skills</h1>
+      <p>AI-powered job matching that scores each position against your resume — so you only apply where you&rsquo;re a strong fit.</p>
+
+      <form id="searchForm" class="search-form" role="search">
+        <div class="input-group">
+          <span class="icon" aria-hidden="true">🔍</span>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Job title, skills, or keywords..."
+            autocomplete="off"
+            aria-label="Search keywords"
+          >
+        </div>
+        <div class="input-group">
+          <span class="icon" aria-hidden="true">📍</span>
+          <input
+            id="locationInput"
+            type="text"
+            placeholder="City or remote"
+            autocomplete="off"
+            aria-label="Location"
+          >
+        </div>
+        <label class="toggle-group">
+          <span>🌍 Remote only</span>
+          <input id="remoteToggle" type="checkbox" aria-label="Remote only">
+        </label>
+        <button class="btn-primary" type="submit">
+          Search
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ========== Results ===================================== -->
+  <main class="results" role="main">
+    <div id="resultsHeader" class="results-header">
+      <h2>
+        📋 Results
+        <span id="resultsCount" class="results-count"></span>
+      </h2>
+    </div>
+    <div id="results" aria-live="polite" aria-label="Search results">
+      <!-- Populated by JS -->
+    </div>
+  </main>
+
+  <!-- ========== Footer ====================================== -->
+  <footer class="footer">
+    <p>Job Search Agent &middot; Powered by Claude + LangGraph</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
