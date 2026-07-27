@@ -132,12 +132,13 @@ a:hover { text-decoration: underline; }
 .hero-inner h1 { color: #fff; margin-bottom: var(--space-sm); text-align: center; }
 .hero-inner p  { color: rgba(255,255,255,.7); margin-bottom: var(--space-xl); font-size: 1.1rem; max-width: 600px; margin-left: auto; margin-right: auto; text-align: center; }
 
-.search-form {
-  display: flex; gap: var(--space-sm); flex-wrap: wrap;
-  align-items: stretch; text-align: left;
+.hero-search-area {
+  display: flex; flex-direction: column; align-items: center;
+  max-width: 100%;
 }
-.search-form .category-chips {
-  display: flex; align-items: stretch;
+.search-form {
+  display: flex; gap: var(--space-sm); flex-wrap: wrap; justify-content: center;
+  align-items: stretch;
 }
 .search-form .input-group {
   flex: 1 1 240px; position: relative; min-width: 0;
@@ -257,6 +258,7 @@ a:hover { text-decoration: underline; }
 /* ----- Category dropdown in hero ----------------------------- */
 .category-chips {
   position: relative; flex-shrink: 0;
+  align-self: flex-start; margin-bottom: var(--space-sm);
 }
 .cat-dropdown-wrap { position: relative; }
 .cat-trigger {
