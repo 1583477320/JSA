@@ -147,6 +147,7 @@ const JSA = (() => {
     settings: {},
     activeTab: 'overview',
     activeCategory: 'all',
+    selectedCategories: [],
   };
 
   let els = {};
@@ -292,6 +293,7 @@ const JSA = (() => {
         remoteOnly: !!remoteOnly,
         maxResults: s.maxResults || 10,
         tavilyApiKey: s.tavilyApiKey || '',
+        categories: state.selectedCategories,
       }),
     });
     if (!resp.ok) {
@@ -713,13 +715,41 @@ const JSA = (() => {
     return div.innerHTML;
   }
 
+  // ---- Pre-search category chips --------------------------------
+  const SEARCH_CHIPS = [
+    { id: 'BOSS直聘', label: 'BOSS直聘' },
+    { id: '猎聘',     label: '猎聘' },
+    { id: '拉钩',     label: '拉钩' },
+    { id: '智联招聘', label: '智联招聘' },
+    { id: 'LinkedIn', label: 'LinkedIn' },
+    { id: '大厂',     label: '🏢 大厂' },
+    { id: '外企',     label: '🌍 外企' },
+  ];
+
+  function renderCategoryChips() {
+    els.categoryChips.innerHTML = '';
+    SEARCH_CHIPS.forEach((chip) => {
+      const btn = document.createElement('button');
+      btn.className = `chip${state.selectedCategories.includes(chip.id) ? ' active' : ''}`;
+      btn.textContent = chip.label;
+      btn.type = 'button';
+      btn.addEventListener('click', () => {
+        const idx = state.selectedCategories.indexOf(chip.id);
+        if (idx === -1) state.selectedCategories.push(chip.id);
+        else state.selectedCategories.splice(idx, 1);
+        renderCategoryChips();
+      });
+      els.categoryChips.appendChild(btn);
+    });
+  }
+
   async function handleSearch(e) {
     if (e) e.preventDefault();
     const query = els.searchInput.value.trim();
     const location = els.locationInput.value.trim();
     const remoteOnly = els.remoteToggle.checked;
     if (!query) { els.searchInput.focus(); return; }
-    state.loading = true; state.error = null;
+    state.loading = true; state.error = null; state.activeCategory = 'all';
     renderResults();
     try { state.jobs = await searchJobs(query, location, remoteOnly); }
     catch (err) { state.error = err.message || 'Search failed.'; }
@@ -753,6 +783,7 @@ const JSA = (() => {
       sAnthropicKey:   document.getElementById('sAnthropicKey'),
       sMaxResults:     document.getElementById('sMaxResults'),
       langToggle:      document.getElementById('langToggle'),
+      categoryChips:   document.getElementById('categoryChips'),
     };
 
     loadSettings();
@@ -762,6 +793,9 @@ const JSA = (() => {
       els.langToggle.textContent = t('lang.alt');
       els.langToggle.addEventListener('click', toggleLang);
     }
+
+    // Category chips
+    renderCategoryChips();
 
     // data-i18n attributes on static elements (settings panel etc.)
     document.querySelectorAll('[data-i18n]').forEach(el => {

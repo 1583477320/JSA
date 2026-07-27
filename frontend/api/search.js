@@ -42,11 +42,12 @@ export default async function handler(req, res) {
     return json(res, 400, { error: 'Invalid JSON body' });
   }
 
-  const query      = (body.query || '').trim();
-  const location   = (body.location || '').trim();
-  const remoteOnly = !!body.remoteOnly;
-  const maxResults = Math.min(Math.max(parseInt(body.maxResults, 10) || 10, 1), 50);
-  const apiKey     = (body.tavilyApiKey || '').trim() || process.env.VERCEL_TAVILY_KEY || '';
+  const query         = (body.query || '').trim();
+  const location      = (body.location || '').trim();
+  const remoteOnly    = !!body.remoteOnly;
+  const maxResults    = Math.min(Math.max(parseInt(body.maxResults, 10) || 10, 1), 50);
+  const apiKey        = (body.tavilyApiKey || '').trim() || process.env.VERCEL_TAVILY_KEY || '';
+  const categories    = Array.isArray(body.categories) ? body.categories : [];
 
   if (!query) return json(res, 400, { error: 'query is required' });
   if (!apiKey) {
@@ -55,9 +56,45 @@ export default async function handler(req, res) {
     });
   }
 
+  // ---- Build query from categories ----------------------------
   let searchQ = query;
   if (remoteOnly) searchQ += ' remote';
   if (location) searchQ += ` ${location}`;
+
+  // Platform targeting
+  const PLATFORM_MAP = {
+    'BOSS直聘': 'zhipin.com',
+    '猎聘': 'liepin.com',
+    '拉钩': 'lagou.com',
+    '智联招聘': 'zhaopin.com',
+    'LinkedIn': 'linkedin.com',
+    'Indeed': 'indeed.com',
+  };
+  const selectedPlatforms = categories.filter((c) => PLATFORM_MAP[c]).map((c) => PLATFORM_MAP[c]);
+  if (selectedPlatforms.length === 1) {
+    searchQ += ` site:${selectedPlatforms[0]}`;
+  } else if (selectedPlatforms.length > 1) {
+    searchQ += ` (${selectedPlatforms.map((s) => `site:${s}`).join(' OR ')})`;
+  }
+
+  // Company-type targeting
+  const BIG_TECH_NAMES = [
+    'ByteDance', 'Tencent', 'Alibaba', 'Baidu', 'Meituan', 'JD.com',
+    'Xiaomi', 'Huawei', 'NetEase', 'PDD', 'Pinduoduo', 'Kuaishou',
+    'Bilibili', 'NIO', 'XPeng', 'Li Auto',
+  ];
+  const FOREIGN_NAMES = [
+    'Google', 'Microsoft', 'Apple', 'Amazon', 'Meta', 'Netflix',
+    'Uber', 'Shopify', 'Spotify', 'IBM', 'Oracle', 'SAP', 'Adobe',
+    'Salesforce', 'Cisco', 'Intel', 'NVIDIA', 'AMD',
+  ];
+
+  if (categories.includes('大厂')) {
+    searchQ += ` (${BIG_TECH_NAMES.slice(0, 8).join(' OR ')})`;
+  }
+  if (categories.includes('外企')) {
+    searchQ += ` (${FOREIGN_NAMES.slice(0, 8).join(' OR ')})`;
+  }
 
   try {
     const tavilyResp = await fetch(TAVILY_URL, {

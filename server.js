@@ -41,6 +41,7 @@ function handleApiSearch(req, res) {
       const remoteOnly = !!params.remoteOnly;
       const maxResults = Math.min(Math.max(parseInt(params.maxResults, 10) || 10, 1), 50);
       const apiKey = (params.tavilyApiKey || '').trim() || process.env.VERCEL_TAVILY_KEY || '';
+      const categories = Array.isArray(params.categories) ? params.categories : [];
 
       if (!query) {
         res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
@@ -59,6 +60,19 @@ function handleApiSearch(req, res) {
       let searchQ = query;
       if (remoteOnly) searchQ += ' remote';
       if (location) searchQ += ` ${location}`;
+
+      const PLATFORM_MAP = {
+        'BOSS直聘': 'zhipin.com', '猎聘': 'liepin.com', '拉钩': 'lagou.com',
+        '智联招聘': 'zhaopin.com', 'LinkedIn': 'linkedin.com', 'Indeed': 'indeed.com',
+      };
+      const selPlats = categories.filter(c => PLATFORM_MAP[c]).map(c => PLATFORM_MAP[c]);
+      if (selPlats.length === 1) searchQ += ` site:${selPlats[0]}`;
+      else if (selPlats.length > 1) searchQ += ` (${selPlats.map(s => `site:${s}`).join(' OR ')})`;
+
+      const BIG_TECH = ['ByteDance','Tencent','Alibaba','Baidu','Meituan','JD.com','Xiaomi','Huawei'];
+      const FOREIGN  = ['Google','Microsoft','Apple','Amazon','Meta','Netflix','Uber','Shopify'];
+      if (categories.includes('大厂')) searchQ += ` (${BIG_TECH.join(' OR ')})`;
+      if (categories.includes('外企')) searchQ += ` (${FOREIGN.join(' OR ')})`;
 
       const tavilyResp = await fetch('https://api.tavily.com/search', {
         method: 'POST',

@@ -169,6 +169,23 @@ a:hover { text-decoration: underline; }
 }
 .search-form .btn-primary:active { transform: translateY(0); }
 
+/* Category chips in hero */
+.category-chips {
+  display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  margin-top: var(--space-md); min-height: 32px;
+}
+.chip {
+  padding: 5px 14px; border-radius: var(--radius-full);
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.85); font-size: .82rem; font-weight: 500;
+  cursor: pointer; transition: all var(--dur-fast) var(--ease-out);
+  font-family: var(--font-display); user-select: none;
+}
+.chip:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.4); }
+.chip.active { background: rgba(255,255,255,.95); color: var(--color-brand); border-color: transparent; }
+.chip .chip-count { margin-left: 4px; opacity: .6; font-weight: 400; }
+
 /* Toggle */
 .toggle-group {
   display: flex; align-items: center; gap: var(--space-sm);
