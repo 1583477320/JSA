@@ -512,8 +512,8 @@ const JSA = (() => {
           <div class="score-ring" title="${t('card.match')}: ${job.match_score}%">${buildScoreRing(job.match_score)}</div>
         </div>
         <div class="job-card-tags">
-          <span class="tag location">📍 ${escapeHtml(job.location)}</span>
-          <span class="tag salary">💰 ${escapeHtml(job.salary)}</span>
+          ${job.location ? `<span class="tag location">📍 ${escapeHtml(job.location)}</span>` : ''}
+          ${job.salary ? `<span class="tag salary">💰 ${escapeHtml(job.salary)}</span>` : ''}
         </div>
         <div class="job-card-snippet">${escapeHtml(job.snippet)}</div>
         <div class="job-card-footer">
@@ -566,7 +566,7 @@ const JSA = (() => {
               </div>
             </div>
             <h3>${t('detail.section.desc')}</h3>
-            <div class="desc-text">${escapeHtml(job.description)}</div>
+            <div class="desc-text">${escapeHtml(job.snippet || job.description || '')}</div>
             <h3>${t('detail.section.details')}</h3>
             <p>📍 ${escapeHtml(job.location)} &nbsp;·&nbsp; 💰 ${escapeHtml(job.salary)}</p>
             ${missingBadges ? `<h3>${t('detail.section.missing')}</h3><div class="missing-skills">${missingBadges}</div>` : ''}
