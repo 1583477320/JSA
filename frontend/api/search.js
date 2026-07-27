@@ -78,23 +78,76 @@ export default async function handler(req, res) {
     }
 
     const data = await tavilyResp.json();
-    const jobs = (data.results || []).map((hit) => ({
-      id: hit.url || hit.title,
-      title: hit.title || '',
-      company: extractCompany(hit.title || '', hit.url || ''),
-      location: '',
-      salary: '',
-      url: hit.url || '',
-      post_date: '',
-      snippet: (hit.content || '').slice(0, 500),
-      match_score: 0,
-      missing_skills: [],
-    }));
+    const jobs = (data.results || []).map((hit) => {
+      const title = hit.title || '';
+      const url = hit.url || '';
+      const company = extractCompany(title, url);
+      const snippet = (hit.content || '').slice(0, 500);
+      return {
+        id: url || title,
+        title,
+        company,
+        location: '',
+        salary: '',
+        url,
+        post_date: '',
+        snippet,
+        match_score: 0,
+        missing_skills: [],
+        categories: classifyJob(title, company, url, snippet),
+      };
+    });
 
     return json(res, 200, { jobs });
   } catch (err) {
     return json(res, 500, { error: `Search failed: ${err.message}` });
   }
+}
+
+// ---- Job classification ----------------------------------------
+const BIG_TECH = [
+  '字节跳动', 'bytedance', '腾讯', 'tencent', '阿里巴巴', 'alibaba', '蚂蚁', 'ant',
+  '百度', 'baidu', '美团', 'meituan', '京东', 'jd.com', '小米', 'xiaomi',
+  '华为', 'huawei', '网易', 'netease', '拼多多', 'pinduoduo', 'pdd',
+  '快手', 'kuaishou', '滴滴', 'didiglobal', '小红书', 'xiaohongshu',
+  'bilibili', 'b站', '蔚来', 'nio', '理想', 'li auto', '小鹏', 'xpeng',
+];
+
+const FOREIGN = [
+  'google', 'microsoft', 'apple', 'amazon', 'aws', 'meta', 'facebook',
+  'netflix', 'uber', 'airbnb', 'shopify', 'spotify', 'twitter', 'x',
+  'ibm', 'oracle', 'sap', 'adobe', 'salesforce', 'cisco', 'intel', 'nvidia',
+  'amd', 'zoom', 'notion', 'figma', 'datadog', 'cloudflare',
+  'mongodb', 'snowflake', 'confluent', 'elastic', 'hashicorp', 'vercel',
+  'linkedin', 'samsung', 'sony', 'siemens', 'bosch', 'philips',
+];
+
+function classifyJob(title, company, url, snippet) {
+  const cats = [];
+  const u = url.toLowerCase();
+  const c = company.toLowerCase();
+  const t = title.toLowerCase();
+  const a = `${t} ${c} ${snippet.toLowerCase()}`;  // all text
+
+  // Platform
+  if (u.includes('zhipin.com'))           cats.push('BOSS直聘');
+  else if (u.includes('liepin.com'))      cats.push('猎聘');
+  else if (u.includes('lagou.com'))       cats.push('拉钩');
+  else if (u.includes('zhaopin.com') || u.includes('zhilian')) cats.push('智联招聘');
+  else if (u.includes('51job.com') || u.includes('51job')) cats.push('前程无忧');
+  else if (u.includes('linkedin.com'))    cats.push('LinkedIn');
+  else if (u.includes('indeed.com'))      cats.push('Indeed');
+
+  // 大厂
+  if (BIG_TECH.some((k) => c.includes(k) || a.includes(k))) cats.push('大厂');
+
+  // 外企
+  if (FOREIGN.some((k) => c.includes(k) || a.includes(k))) cats.push('外企');
+
+  // Remote
+  if (u.includes('remote') || t.includes('remote')) cats.push('远程');
+
+  return cats;
 }
 
 function extractCompany(title, url) {

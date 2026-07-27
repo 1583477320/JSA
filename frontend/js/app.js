@@ -146,6 +146,7 @@ const JSA = (() => {
     chatHistory: {},
     settings: {},
     activeTab: 'overview',
+    activeCategory: 'all',
   };
 
   let els = {};
@@ -466,8 +467,15 @@ const JSA = (() => {
   // ================================================================
   //  Render results
   // ================================================================
+  /** Collect unique categories across all jobs, sorted by frequency. */
+  function _allCategories(jobs) {
+    const freq = {};
+    jobs.forEach((j) => (j.categories || []).forEach((c) => { freq[c] = (freq[c] || 0) + 1; }));
+    return Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([c]) => c);
+  }
+
   function renderResults() {
-    const { jobs, loading, error } = state;
+    const { jobs: allJobs, loading, error, activeCategory } = state;
     els.results.innerHTML = '';
 
     if (loading) {
@@ -478,12 +486,38 @@ const JSA = (() => {
       els.results.innerHTML = `<div class="results-error"><p>⚠️ ${escapeHtml(error)}</p></div>`;
       return;
     }
-    if (jobs.length === 0) {
+    if (allJobs.length === 0) {
       els.results.innerHTML = `<div class="results-empty"><div class="empty-icon">🔍</div><h3>${t('results.empty.title')}</h3><p>${t('results.empty.desc')}</p></div>`;
       return;
     }
 
+    // Filter by active category
+    const jobs = activeCategory === 'all'
+      ? allJobs
+      : allJobs.filter((j) => (j.categories || []).includes(activeCategory));
+
+    const cats = _allCategories(allJobs);
     els.resultsCount.textContent = t('results.count', { n: jobs.length, s: jobs.length > 1 ? 's' : '' });
+
+    // ---- Category filter bar ----
+    const filterBar = document.createElement('div');
+    filterBar.className = 'category-filter';
+    const allBtn = document.createElement('button');
+    allBtn.className = `cat-btn${activeCategory === 'all' ? ' active' : ''}`;
+    allBtn.textContent = `All (${allJobs.length})`;
+    allBtn.addEventListener('click', () => { state.activeCategory = 'all'; renderResults(); });
+    filterBar.appendChild(allBtn);
+    cats.forEach((c) => {
+      const count = allJobs.filter((j) => (j.categories || []).includes(c)).length;
+      const btn = document.createElement('button');
+      btn.className = `cat-btn${activeCategory === c ? ' active' : ''}`;
+      btn.textContent = `${c} (${count})`;
+      btn.addEventListener('click', () => { state.activeCategory = c; renderResults(); });
+      filterBar.appendChild(btn);
+    });
+    els.results.appendChild(filterBar);
+
+    // ---- Job grid ----
     const grid = document.createElement('div');
     grid.className = 'job-grid';
 
@@ -499,6 +533,10 @@ const JSA = (() => {
       const postedLabel = t('card.posted');
       const viewLabel = t('card.view');
       const remoteLabel = t('card.remote');
+      const catBadges = (job.categories || []).map((c) =>
+        `<span class="cat-badge cat-${c}">${escapeHtml(c)}</span>`
+      ).join('');
+
       card.innerHTML = `
         <div class="job-card-top">
           <div>
@@ -510,7 +548,7 @@ const JSA = (() => {
         <div class="job-card-tags">
           <span class="tag location">📍 ${escapeHtml(job.location)}</span>
           <span class="tag salary">💰 ${escapeHtml(job.salary)}</span>
-          ${job.remote ? `<span class="tag">🌍 ${remoteLabel}</span>` : ''}
+          ${catBadges}
         </div>
         <div class="job-card-snippet">${escapeHtml(job.snippet)}</div>
         <div class="job-card-footer">
@@ -520,6 +558,10 @@ const JSA = (() => {
       grid.appendChild(card);
     });
     els.results.appendChild(grid);
+
+    if (jobs.length === 0) {
+      els.results.innerHTML += `<div class="results-empty" style="margin-top:2rem"><div class="empty-icon">🏷️</div><h3>该分类暂无结果</h3><p>试试其他分类标签</p></div>`;
+    }
   }
 
   // ================================================================
@@ -566,6 +608,7 @@ const JSA = (() => {
             <div class="desc-text">${escapeHtml(job.description)}</div>
             <h3>${t('detail.section.details')}</h3>
             <p>📍 ${escapeHtml(job.location)} &nbsp;·&nbsp; 💰 ${escapeHtml(job.salary)}</p>
+            ${job.categories ? `<div class="detail-cats">${job.categories.map(c => `<span class="cat-badge cat-${c}">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
             ${missingBadges ? `<h3>${t('detail.section.missing')}</h3><div class="missing-skills">${missingBadges}</div>` : ''}
             <div class="modal-actions">
               <button class="btn btn-primary open-url">🔗 ${t('detail.btn.open')}</button>
