@@ -31,6 +31,7 @@
       <div class="navbar-actions">
         <button id="langToggle" class="btn-icon lang-toggle" aria-label="Switch language" title="Switch language">EN</button>
         <span class="navbar-badge">v0.1</span>
+        <button id="profileBtn" class="btn-icon" aria-label="Profile" title="Profile">👤</button>
         <button id="settingsBtn" class="btn-icon" aria-label="Settings" title="Settings">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72 1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
@@ -83,6 +84,38 @@
           <button id="settingsReset" class="btn btn-secondary">↺ <span data-i18n="settings.reset">Reset</span></button>
         </div>
         <p id="settingsStatus" class="settings-status"></p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ========== Profile Panel ================================ -->
+  <div id="profileOverlay" class="settings-overlay" aria-hidden="true">
+    <aside class="settings-panel" role="dialog" aria-label="Profile">
+      <div class="settings-header">
+        <h2>👤 <span data-i18n="profile.title">个人简历</span></h2>
+        <button id="profileClose" class="modal-close" aria-label="Close profile">&times;</button>
+      </div>
+      <div class="settings-body">
+        <p class="setting-desc" data-i18n="profile.desc">填写你的简历信息，AI 会据此分析岗位匹配度。</p>
+
+        <label class="setting-group setting-textarea">
+          <span data-i18n="profile.skills">技能（逗号分隔）</span>
+          <textarea id="pSkills" rows="3" placeholder="Python, FastAPI, Docker, SQL, ..."></textarea>
+        </label>
+        <label class="setting-group setting-textarea">
+          <span data-i18n="profile.experience">工作经验</span>
+          <textarea id="pExperience" rows="5" placeholder="2022-至今 · 高级 Python 工程师 @ XX 公司"></textarea>
+        </label>
+        <label class="setting-group setting-textarea">
+          <span data-i18n="profile.education">教育背景</span>
+          <textarea id="pEducation" rows="3" placeholder="XX 大学 · 计算机科学 · 本科 (2018-2022)"></textarea>
+        </label>
+
+        <div class="settings-actions">
+          <button id="profileSave" class="btn btn-primary">💾 <span data-i18n="profile.save">保存简历</span></button>
+          <button id="profileReset" class="btn btn-secondary">↺ <span data-i18n="profile.reset">清空</span></button>
+        </div>
+        <p id="profileStatus" class="settings-status"></p>
       </div>
     </aside>
   </div>

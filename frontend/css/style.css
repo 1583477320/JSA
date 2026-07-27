@@ -523,6 +523,16 @@ a:hover { text-decoration: underline; }
   display: flex; gap: var(--space-sm); margin-top: var(--space-lg);
   flex-wrap: wrap;
 }
+
+.setting-textarea textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); font-size: .85rem; font-family: var(--font-display);
+  background: var(--color-surface); color: var(--color-text);
+  resize: vertical; outline: none; transition: border-color var(--dur-fast);
+  line-height: 1.5; box-sizing: border-box;
+}
+.setting-textarea textarea:focus { border-color: var(--color-accent); }
+.setting-textarea textarea::placeholder { color: var(--color-muted); }
 .settings-status {
   margin-top: var(--space-md); font-size: .85rem; min-height: 1.3em;
   transition: color var(--dur-fast);

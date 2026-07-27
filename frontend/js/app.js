@@ -62,6 +62,15 @@ const JSA = (() => {
       'settings.saved': '✅ Settings saved',
       'settings.reset_msg': '↺ Reset to defaults',
       'footer': 'Job Search Agent · Powered by Claude + LangGraph',
+      'profile.title': 'Profile',
+      'profile.desc': 'Fill in your resume info — AI will use it to score job matches.',
+      'profile.skills': 'Skills (comma-separated)',
+      'profile.experience': 'Work Experience',
+      'profile.education': 'Education',
+      'profile.save': 'Save Profile',
+      'profile.reset': 'Clear',
+      'profile.saved': '✅ Profile saved',
+      'profile.cleared': '↺ Profile cleared',
     },
     zh: {
       'lang.name': '中',
@@ -114,6 +123,15 @@ const JSA = (() => {
       'settings.saved': '✅ 设置已保存',
       'settings.reset_msg': '↺ 已恢复默认设置',
       'footer': '求职智能体 · 由 Claude + LangGraph 驱动',
+      'profile.title': '个人简历',
+      'profile.desc': '填写你的简历信息，AI 会据此分析岗位匹配度。',
+      'profile.skills': '技能（逗号分隔）',
+      'profile.experience': '工作经验',
+      'profile.education': '教育背景',
+      'profile.save': '保存简历',
+      'profile.reset': '清空',
+      'profile.saved': '✅ 简历已保存',
+      'profile.cleared': '↺ 简历已清空',
     },
   };
 
@@ -145,6 +163,7 @@ const JSA = (() => {
     chatMessages: [],
     chatHistory: {},
     settings: {},
+    profile: {},
     activeTab: 'overview',
     selectedCategories: [],
   };
@@ -262,6 +281,136 @@ const JSA = (() => {
   function closeSettings() {
     els.settingsOverlay.classList.remove('open');
     els.settingsOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  // ================================================================
+  //  Profile
+  // ================================================================
+  const PROFILE_KEY = 'jsa_profile';
+  const DEFAULT_PROFILE = { skills: '', experience: '', education: '' };
+
+  function loadProfile() {
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      state.profile = raw ? { ...DEFAULT_PROFILE, ...JSON.parse(raw) } : { ...DEFAULT_PROFILE };
+    } catch { state.profile = { ...DEFAULT_PROFILE }; }
+  }
+
+  function saveProfile() {
+    const p = {
+      skills: els.pSkills.value.trim(),
+      experience: els.pExperience.value.trim(),
+      education: els.pEducation.value.trim(),
+    };
+    state.profile = p;
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+    _showProfileStatus(t('profile.saved'), 'ok');
+  }
+
+  function resetProfile() {
+    state.profile = { ...DEFAULT_PROFILE };
+    localStorage.removeItem(PROFILE_KEY);
+    _populateProfileForm();
+    _showProfileStatus(t('profile.cleared'), 'ok');
+  }
+
+  function _populateProfileForm() {
+    const p = state.profile;
+    els.pSkills.value = p.skills || '';
+    els.pExperience.value = p.experience || '';
+    els.pEducation.value = p.education || '';
+  }
+
+  function _showProfileStatus(msg, cls) {
+    els.profileStatus.textContent = msg;
+    els.profileStatus.className = 'settings-status ' + (cls || '');
+    setTimeout(() => { if (els.profileStatus.textContent === msg) els.profileStatus.textContent = ''; }, 3000);
+  }
+
+  function openProfile() {
+    _populateProfileForm();
+    els.profileOverlay.classList.add('open');
+    els.profileOverlay.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeProfile() {
+    els.profileOverlay.classList.remove('open');
+    els.profileOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  // ================================================================
+  //  Match scoring via LLM
+  // ================================================================
+  async function _scoreJob(job) {
+    const p = state.profile;
+    const s = state.settings;
+    if (!s.openaiApiKey) return;
+    if (!job.snippet && !job.description) return;
+
+    const isZh = state.lang === 'zh';
+    const jdText = job.snippet || job.description || '';
+    const skillsList = p.skills || (isZh ? '未填写' : 'Not provided');
+    const expText = p.experience || (isZh ? '未填写' : 'Not provided');
+    const eduText = p.education || (isZh ? '未填写' : 'Not provided');
+
+    const prompt = isZh
+      ? `你是技术招聘专家。分析以下简历和岗位的匹配度。
+
+## 简历
+技能：${skillsList}
+经验：${expText}
+学历：${eduText}
+
+## 岗位信息
+公司：${job.company}  职位：${job.title}
+描述：${jdText.slice(0, 1000)}
+
+严格返回如下 JSON（不要加 markdown 标记）：
+{"score":0-100,"missing_skills":["技能1"],"matching_skills":["技能2"],"summary":"一句话评估"}`
+      : `You are a technical recruiter. Analyze the match between this resume and the job.
+
+## Resume
+Skills: ${skillsList}
+Experience: ${expText}
+Education: ${eduText}
+
+## Job Info
+Company: ${job.company}  Title: ${job.title}
+Description: ${jdText.slice(0, 1000)}
+
+Return exactly this JSON (no markdown):
+{"score":0-100,"missing_skills":["skill1"],"matching_skills":["skill2"],"summary":"one sentence assessment"}`;
+
+    try {
+      const baseUrl = (s.openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+      const resp = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${s.openaiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: s.openaiModel || 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: isZh ? '你是精准的技术招聘评分专家。只返回 JSON。' : 'You are a precise technical scoring expert. Return JSON only.' },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.3,
+          max_tokens: 512,
+        }),
+      });
+
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const raw = data.choices?.[0]?.message?.content || '';
+      const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const result = JSON.parse(cleaned);
+
+      job.match_score = Math.max(0, Math.min(100, result.score || 0));
+      job.missing_skills = Array.isArray(result.missing_skills) ? result.missing_skills : [];
+    } catch {
+      // Scoring failed silently — keep score at 0
+    }
   }
 
   // ================================================================
@@ -508,6 +657,7 @@ Rules:
     jobs.forEach(job => {
       const card = document.createElement('div');
       card.className = 'job-card';
+      card.dataset.jobId = job.id;
       card.tabIndex = 0;
       card.setAttribute('role', 'button');
       card.setAttribute('aria-label', `${job.title} at ${job.company}`);
@@ -582,7 +732,8 @@ Rules:
             <div class="desc-text">${escapeHtml(job.snippet || job.description || '')}</div>
             <h3>${t('detail.section.details')}</h3>
             <p>📍 ${escapeHtml(job.location)} &nbsp;·&nbsp; 💰 ${escapeHtml(job.salary)}</p>
-            ${missingBadges ? `<h3>${t('detail.section.missing')}</h3><div class="missing-skills">${missingBadges}</div>` : ''}
+            <h3>${t('detail.section.missing')}</h3>
+            <div class="missing-skills">${missingBadges || (job.match_score === 0 ? '<span class="tag" style="opacity:.5">…</span>' : '')}</div>
             <div class="modal-actions">
               <button class="btn btn-primary open-url">🔗 ${t('detail.btn.open')}</button>
               <button class="btn btn-secondary" id="chatFromOverview">💬 ${t('detail.btn.chat')}</button>
@@ -615,6 +766,21 @@ Rules:
     modal.querySelector('.open-url')?.addEventListener('click', () => {
       window.open(job.url, '_blank', 'noopener');
     });
+
+    // Trigger scoring if not yet scored
+    if (job.match_score === 0 && (state.profile.skills || state.profile.experience)) {
+      const scoreRingEl = modal.querySelector('.score-ring');
+      const missingEl = modal.querySelector('.missing-skills');
+      _scoreJob(job).then(() => {
+        if (scoreRingEl) scoreRingEl.innerHTML = buildScoreRing(job.match_score, 64);
+        if (missingEl && job.missing_skills?.length) {
+          missingEl.innerHTML = job.missing_skills.map(s => `<span class="tag">${escapeHtml(s)}</span>`).join('');
+        }
+        // Update card in results list
+        const card = document.querySelector(`[data-job-id="${job.id}"] .score-ring`);
+        if (card) card.innerHTML = buildScoreRing(job.match_score);
+      });
+    }
 
     modal.querySelectorAll('.modal-tab').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -792,9 +958,19 @@ Rules:
       sMaxResults:     document.getElementById('sMaxResults'),
       langToggle:      document.getElementById('langToggle'),
       categoryChips:   document.getElementById('categoryChips'),
+      profileBtn:      document.getElementById('profileBtn'),
+      profileOverlay:  document.getElementById('profileOverlay'),
+      profileClose:    document.getElementById('profileClose'),
+      profileSave:     document.getElementById('profileSave'),
+      profileReset:    document.getElementById('profileReset'),
+      profileStatus:   document.getElementById('profileStatus'),
+      pSkills:         document.getElementById('pSkills'),
+      pExperience:     document.getElementById('pExperience'),
+      pEducation:      document.getElementById('pEducation'),
     };
 
     loadSettings();
+    loadProfile();
 
     // i18n — init lang button and apply translations
     if (els.langToggle) {
@@ -823,6 +999,15 @@ Rules:
     });
     els.settingsSave.addEventListener('click', saveSettings);
     els.settingsReset.addEventListener('click', resetSettings);
+
+    // Profile events
+    els.profileBtn.addEventListener('click', openProfile);
+    els.profileClose.addEventListener('click', closeProfile);
+    els.profileOverlay.addEventListener('click', e => {
+      if (e.target === els.profileOverlay) closeProfile();
+    });
+    els.profileSave.addEventListener('click', saveProfile);
+    els.profileReset.addEventListener('click', resetProfile);
 
     els.searchForm.addEventListener('submit', handleSearch);
     els.searchInput.value = 'Python engineer';
