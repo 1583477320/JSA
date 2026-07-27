@@ -340,78 +340,88 @@ const JSA = (() => {
     };
   }
 
-  function _generateChatReply(job, userMsg) {
-    const ctx = _getChatContext(job);
+  function _buildChatSystem(job) {
     const isZh = state.lang === 'zh';
-    const facts = isZh ? ctx.factsZh : ctx.factsEn;
-    const tech = facts[Math.floor(Math.random() * facts.length)];
+    const ctx = _getChatContext(job);
+    const tech = isZh ? ctx.factsZh.join(', ') : ctx.factsEn.join(', ');
     const missing = job.missing_skills?.join(', ') || (isZh ? '无' : 'none');
-    const strength = isZh
-      ? (job.match_score >= 80 ? '很强' : job.match_score >= 60 ? '中等' : '偏低')
-      : (job.match_score >= 80 ? 'strong' : job.match_score >= 60 ? 'moderate' : 'longer-shot');
-    const advice = isZh
-      ? (job.match_score >= 80 ? '强烈建议投递！在求职信中突出你的相关经验即可。'
-        : job.match_score >= 60 ? '建议在投递的同时补充缺失技能。你的核心经验是相关的。'
-        : '可能有些挑战，但如果你对这个领域有热情，可以一试——重点强调可迁移能力。')
-      : (job.match_score >= 80 ? 'You should definitely apply! Focus on your relevant experience in the cover letter.'
-        : job.match_score >= 60 ? 'Consider upskilling in the missing areas while applying. Your core experience is relevant.'
-        : 'This might be a stretch, but if you\'re passionate about the domain, go for it — focus on transferable skills.');
 
-    const lower = userMsg.toLowerCase();
+    return isZh
+      ? `你是 JSA（求职智能体），帮助求职者分析岗位和准备面试。
 
-    // Salary
-    if (lower.includes('salary') || lower.includes('pay') || lower.includes('comp') || lower.includes('薪资') || lower.includes('工资') || lower.includes('待遇')) {
-      return isZh
-        ? `该岗位的薪资范围为 **${job.salary}**。在 ${job.location} 地区，这属于${job.match_score >= 70 ? '有竞争力' : '中等水平'}的水平。谈判时建议关注整体薪酬（base + 期权 + 福利）。`
-        : `The listed salary range is **${job.salary}**. This is ${job.match_score >= 70 ? 'competitive' : 'average'} for this type of role in ${job.location}. When negotiating, focus on total compensation (base + equity + benefits).`;
-    }
-    // Interview
-    if (lower.includes('interview') || lower.includes('prepare') || lower.includes('tips') || lower.includes('面试') || lower.includes('准备') || lower.includes('技巧')) {
-      return isZh
-        ? `好问题！对于 ${job.company} 的 ${job.title} 岗位，我建议：\n\n1. **技术准备**：重点掌握 ${tech}——可能需要系统设计相关的问题。\n2. **行为面试**：准备跨团队协作和项目主导的故事。\n3. **公司研究**：了解 ${job.company} 的产品以及该岗位对其路线图的影响。\n\n需要我生成具体的练习问题吗？`
-        : `Great question! For this ${job.title} role at ${job.company}, I'd suggest:\n\n1. **Technical prep**: Focus on ${tech} — expect system design questions around scalability.\n2. **Behavioral**: Prepare stories about cross-team collaboration and project ownership.\n3. **Company research**: Understand ${job.company}'s products and how this role impacts their roadmap.\n\nWant me to generate specific practice questions?`;
-    }
-    // Cover letter
-    if (lower.includes('cover') || lower.includes('letter') || lower.includes('求职信')) {
-      return isZh
-        ? `关于求职信，我建议的结构是：\n\n1. **开头**：表达对 ${job.company} 及其 ${job.description.split('.')[0]} 的热情。\n2. **技术匹配**：强调你在 ${tech} 方面的经验如何满足他们的需求。\n3. **桥梁段落**：${missing !== '无' ? `虽然我在 ${missing} 方面的深度还在建设中，但我的核心工程技能可以直接应用。` : '直接说明你的背景如何完美匹配他们的要求。'}\n4. **结尾**：再次表达兴趣并邀请进一步沟通。\n\n需要我起草一封吗？`
-        : `For the cover letter, I'd structure it as:\n\n1. **Opening**: Express enthusiasm for ${job.company} and their ${job.description.split('.')[0].toLowerCase()}.\n2. **Technical fit**: Highlight your experience with ${tech} and how it maps to their needs.\n3. **Bridge**: ${missing !== 'none' ? `Acknowledge that while you're building depth in ${missing}, your core engineering skills are directly applicable.` : 'Directly address how your background matches their requirements.'}\n4. **Closing**: Reiterate interest and invite a conversation.\n\nWould you like me to draft one?`;
-    }
-    // Remote
-    if (lower.includes('remote') || lower.includes('wfh') || lower.includes('onsite') || lower.includes('远程') || lower.includes('在家') || lower.includes(' onsite')) {
-      return isZh
-        ? `该岗位标注为 **${job.remote ? '🌍 远程' : '📍 现场/混合办公，地点：' + job.location}**。${job.remote ? '该公司支持远程办公，给你更大的灵活性。' : '你需要基于或愿意搬迁到 ' + job.location + '。'}`
-        : `This position is listed as **${job.remote ? '🌍 Remote' : '📍 On-site / Hybrid in ' + job.location}**. ${job.remote ? 'The company is remote-friendly, which gives you flexibility.' : 'You\'ll need to be based in or willing to relocate to ' + job.location + '.'}`;
-    }
-    // Match score
-    if (lower.includes('match') || lower.includes('score') || lower.includes('fit') || lower.includes('匹配') || lower.includes('分数')) {
-      return isZh
-        ? `你的匹配分数为 **${job.match_score}%**。${advice} 分数基于技能重合度、经验相关性和地点匹配度计算。${missing !== '无' ? `\n\n建议提升的领域：**${missing}**。` : ''}`
-        : `Your match score is **${job.match_score}%**. ${advice} The score is based on skills overlap, experience relevance, and location alignment.${missing !== 'none' ? `\n\nAreas to improve: **${missing}**.` : ''}`;
-    }
+当前岗位信息：
+- 公司：${job.company}
+- 职位：${job.title}
+- 描述：${job.snippet || job.description || '暂无'}
+- 薪资：${job.salary || '未提供'}
+- 地点：${job.location || '未提供'}
+- 匹配分数：${job.match_score}%
+- 相关技术：${tech}
+- 缺失技能：${missing}
 
-    // Default
-    if (isZh) {
-      const zhTemplates = [
-        `根据职位描述，他们正在寻找的关键技术包括 **${tech}**。你的背景与大部分要求匹配得很好。`,
-        `一个好的方法是在简历中突出你在 **${tech}** 方面的经验。即使不完全满足所有要求，你的可迁移技能也很有价值。`,
-        `对于 **${job.company}** 的这个岗位，我建议强调你在可扩展系统和团队协作方面的工作。`,
-        `从匹配分数（**${job.match_score}%**）来看，这是一个${strength}的匹配。${advice}`,
-        `缺失技能：${missing}。要弥合这一差距，你可以提及任何相关的经验或展示快速学习能力的副项目。`,
-      ];
-      return zhTemplates[Math.floor(Math.random() * zhTemplates.length)];
-    }
-    const enTemplates = [
-      `Based on the job description, the key technologies they're looking for include **${tech}**. Your background aligns well with most of these requirements.`,
-      `A good approach here is to highlight your experience with **${tech}** in your resume. Even if you don't meet 100% of the requirements, your transferable skills are valuable.`,
-      `For this role at **${job.company}**, I'd recommend emphasizing your work on projects that involved scalable systems and team collaboration.`,
-      `Looking at the match score (**${job.match_score}%**), this is a ${strength} fit. ${advice}`,
-      `The missing skills are: ${missing}. To bridge this gap, you could mention any related experience or side projects that demonstrate fast learning.`,
-    ];
-    return enTemplates[Math.floor(Math.random() * enTemplates.length)];
+规则：
+1. 用中文回答，简洁直接
+2. 基于岗位信息给出具体建议
+3. 如果被问到前面聊过的内容，引用之前的对话
+4. 需要时用 markdown 格式（加粗、列表等）
+5. 保持专业但友好的语气`
+      : `You are JSA (Job Search Agent), helping job seekers analyze positions and prepare for interviews.
+
+Current job info:
+- Company: ${job.company}
+- Title: ${job.title}
+- Description: ${job.snippet || job.description || 'Not available'}
+- Salary: ${job.salary || 'Not provided'}
+- Location: ${job.location || 'Not provided'}
+- Match score: ${job.match_score}%
+- Relevant tech: ${tech}
+- Missing skills: ${missing}
+
+Rules:
+1. Answer concisely and directly
+2. Give specific advice based on the job info
+3. When asked about previous topics, reference earlier messages
+4. Use markdown formatting when helpful (bold, lists)
+5. Be professional but approachable`;
   }
 
-  function sendChatMessage(job) {
+  async function _chatReply(job) {
+    const s = state.settings;
+    const baseUrl = s.openaiBaseUrl || 'https://api.openai.com/v1';
+    const apiKey  = s.openaiApiKey || '';
+    const model   = s.openaiModel || 'gpt-4o-mini';
+
+    if (!apiKey) throw new Error(state.lang === 'zh'
+      ? '请先在 Settings 中配置 OpenAI API Key'
+      : 'Please configure OpenAI API Key in Settings first');
+
+    const endpoint = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const systemPrompt = _buildChatSystem(job);
+
+    const apiMessages = [
+      { role: 'system', content: systemPrompt },
+      ...state.chatMessages.map((m) => ({ role: m.role, content: m.content })),
+    ];
+
+    const resp = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({ model, messages: apiMessages, temperature: 0.7, max_tokens: 1024 }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`API ${resp.status}: ${errText.slice(0, 200)}`);
+    }
+
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+
+  async function sendChatMessage(job) {
     const input = els.chatInput;
     const text = input.value.trim();
     if (!text) return;
@@ -428,15 +438,18 @@ const JSA = (() => {
     container.appendChild(typingEl);
     container.scrollTop = container.scrollHeight;
 
-    setTimeout(() => {
-      const reply = _generateChatReply(job, text);
+    try {
+      const reply = await _chatReply(job);
       state.chatMessages.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      state.chatMessages.push({ role: 'assistant', content: `⚠️ ${err.message}` });
+    } finally {
       const tEl = document.getElementById('chatTyping');
       if (tEl) tEl.remove();
       _renderChatMessages(job);
       els.chatSend.disabled = false;
       els.chatInput.focus();
-    }, 800 + Math.random() * 700);
+    }
   }
 
   function _renderChatMessages(job) {

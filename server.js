@@ -69,8 +69,8 @@ function handleApiSearch(req, res) {
       if (selPlats.length === 1) searchQ += ` site:${selPlats[0]}`;
       else if (selPlats.length > 1) searchQ += ` (${selPlats.map(s => `site:${s}`).join(' OR ')})`;
 
-      const BIG_TECH = ['ByteDance','Tencent','Alibaba','Baidu','Meituan','JD.com','Xiaomi','Huawei'];
-      const FOREIGN  = ['Google','Microsoft','Apple','Amazon','Meta','Netflix','Uber','Shopify'];
+      const BIG_TECH = ['ByteDance', 'Tencent', 'Alibaba', 'Baidu', 'Meituan', 'JD.com', 'Xiaomi', 'Huawei'];
+      const FOREIGN = ['Google', 'Microsoft', 'Apple', 'Amazon', 'Meta', 'Netflix', 'Uber', 'Shopify'];
       if (categories.includes('大厂')) searchQ += ` (${BIG_TECH.join(' OR ')})`;
       if (categories.includes('外企')) searchQ += ` (${FOREIGN.join(' OR ')})`;
 
@@ -108,6 +108,7 @@ function handleApiSearch(req, res) {
           url,
           post_date: '',
           snippet,
+          description: snippet,
           match_score: 0,
           missing_skills: [],
           categories: classifyJob(title, company, url, snippet),
@@ -139,6 +140,53 @@ function extractCompany(title, url) {
   } catch { return 'Unknown'; }
 }
 
+// ---- Chat proxy ------------------------------------------------
+function handleApiChat(req, res) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const params = JSON.parse(body);
+      const messages = Array.isArray(params.messages) ? params.messages : [];
+      const apiKey   = (params.openaiApiKey || '').trim();
+      const baseUrl  = (params.openaiBaseUrl || '').trim() || 'https://api.openai.com/v1';
+      const model    = (params.openaiModel || '').trim() || 'gpt-4o-mini';
+
+      if (!apiKey) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'OpenAI API Key 未配置 — 请在 Settings 中填写' }));
+        return;
+      }
+      if (!messages.length) {
+        res.writeHead(400, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: 'messages is required' }));
+        return;
+      }
+
+      const endpoint = baseUrl.replace(/\/+$/, '') + '/chat/completions';
+      const llmResp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024 }),
+      });
+
+      if (!llmResp.ok) {
+        const errText = await llmResp.text().catch(() => '');
+        res.writeHead(502, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+        res.end(JSON.stringify({ error: `LLM API ${llmResp.status}: ${errText.slice(0, 200)}` }));
+        return;
+      }
+
+      const data = await llmResp.json();
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ reply: data.choices?.[0]?.message?.content || '' }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify({ error: `Chat failed: ${err.message}` }));
+    }
+  });
+}
+
 // ---- Job classification ----------------------------------------
 const BIG_TECH = [
   '字节跳动', 'bytedance', '腾讯', 'tencent', '阿里巴巴', 'alibaba', '蚂蚁', 'ant',
@@ -163,13 +211,13 @@ function classifyJob(title, company, url, snippet) {
   const t = title.toLowerCase();
   const a = `${t} ${c} ${snippet.toLowerCase()}`;
 
-  if (u.includes('zhipin.com'))           cats.push('BOSS直聘');
-  else if (u.includes('liepin.com'))      cats.push('猎聘');
-  else if (u.includes('lagou.com'))       cats.push('拉钩');
+  if (u.includes('zhipin.com')) cats.push('BOSS直聘');
+  else if (u.includes('liepin.com')) cats.push('猎聘');
+  else if (u.includes('lagou.com')) cats.push('拉钩');
   else if (u.includes('zhaopin.com') || u.includes('zhilian')) cats.push('智联招聘');
   else if (u.includes('51job.com') || u.includes('51job')) cats.push('前程无忧');
-  else if (u.includes('linkedin.com'))    cats.push('LinkedIn');
-  else if (u.includes('indeed.com'))      cats.push('Indeed');
+  else if (u.includes('linkedin.com')) cats.push('LinkedIn');
+  else if (u.includes('indeed.com')) cats.push('Indeed');
 
   if (BIG_TECH.some((k) => c.includes(k) || a.includes(k))) cats.push('大厂');
   if (FOREIGN.some((k) => c.includes(k) || a.includes(k))) cats.push('外企');
@@ -185,6 +233,10 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'POST' && url === '/api/search') {
     handleApiSearch(req, res);
+    return;
+  }
+  if (req.method === 'POST' && url === '/api/chat') {
+    handleApiChat(req, res);
     return;
   }
 
