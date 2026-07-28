@@ -432,6 +432,7 @@ a:hover { text-decoration: underline; }
 }
 .modal-body h3:first-child { margin-top: 0; }
 .modal-body p, .modal-body .desc-text { color: var(--color-text); font-size: .92rem; line-height: 1.65; }
+.desc-text { white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
 
 .modal-match {
   display: flex; align-items: center; gap: var(--space-lg);

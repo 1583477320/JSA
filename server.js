@@ -81,7 +81,7 @@ function handleApiSearch(req, res) {
           api_key: apiKey,
           query: searchQ,
           search_depth: 'advanced',
-          include_raw_content: false,
+          include_raw_content: true,
           max_results: Math.min(maxResults, 20),
         }),
       });

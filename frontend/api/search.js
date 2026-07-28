@@ -104,7 +104,7 @@ export default async function handler(req, res) {
         api_key: apiKey,
         query: searchQ,
         search_depth: 'advanced',
-        include_raw_content: false,
+        include_raw_content: true,
         max_results: Math.min(maxResults, 20),
       }),
     });
@@ -119,7 +119,8 @@ export default async function handler(req, res) {
       const title = hit.title || '';
       const url = hit.url || '';
       const company = extractCompany(title, url);
-      const snippet = (hit.content || '').slice(0, 500);
+      const rawContent = hit.raw_content || hit.content || '';
+      const snippet = rawContent.slice(0, 2000);
       return {
         id: url || title,
         title,
@@ -129,6 +130,8 @@ export default async function handler(req, res) {
         url,
         post_date: '',
         snippet,
+        raw_content: rawContent.slice(0, 5000),
+        description: rawContent.slice(0, 5000),
         match_score: 0,
         missing_skills: [],
         categories: classifyJob(title, company, url, snippet),

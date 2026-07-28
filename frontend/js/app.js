@@ -729,7 +729,7 @@ Rules:
               </div>
             </div>
             <h3>${t('detail.section.desc')}</h3>
-            <div class="desc-text">${escapeHtml(job.snippet || job.description || '')}</div>
+            <div class="desc-text">${escapeHtml(job.description || job.snippet || '')}</div>
             <h3>${t('detail.section.details')}</h3>
             <p>📍 ${escapeHtml(job.location)} &nbsp;·&nbsp; 💰 ${escapeHtml(job.salary)}</p>
             <h3>${t('detail.section.missing')}</h3>
